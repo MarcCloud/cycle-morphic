@@ -30,9 +30,9 @@ export default ({port, env = 'dev'}) => {
     });
     server.use(express.static(resolve('./www')));
     server.get('/', (req, res)=>{
-        const context$ = Observable.just({ weight: req.query.weight || 0, height: req.query.height || 0 });
-        let {sources} = run(App, {DOM: makeHTMLDriver(), context: ()=> context$});
-        sources.DOM.take(1).subscribe(html => res.render('app', {APP: html, CTX: serialize(context$)}));
+        const context = { weight: req.query.weight || 70, height: req.query.height || 170 };
+        let {sources} = run(App, {DOM: makeHTMLDriver(), context: ()=> context});
+        sources.DOM.take(1).subscribe(html => res.render('app', {APP: html, CTX: serialize(context)}));
     });
     return server.listen(port, ()=> console.log('Server running at port: %d', port));
 };

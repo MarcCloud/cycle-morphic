@@ -1,47 +1,43 @@
 import { Observable } from 'rx';
 import { hJSX } from '@cycle/dom';
+import LabeledSlider from './widgets/labeled-slider';
 
 const calculateBMI = (weight, height)=> {
    const heightMeters = height * 0.01;
    return Math.round(weight / (heightMeters * heightMeters)) || 0;
 };
 
-const WeightSlider = (weight) => {
-    return <div><label>Weight: {weight} kg</label><input id="weight" type="range" min="40" max="140" value={weight}/></div>;
-};
-
-const HeightSlider = (height) => {
-    return <div><label>Height: {height} cm</label><input id="height" type="range" min="140" max="210" value={height}/></div>;
-};
-
-const model$ = (actions, context$) => {
-    return context$.map(ctx=>{
-        return Observable.combineLatest(actions.changeWeight$.startWith(ctx.weight),
-                                        actions.changeHeight$.startWith(ctx.height),
+const model$ = (actions) => {
+    return Observable.combineLatest(actions.changeWeight$,
+                                        actions.changeHeight$,
                                         (weight, height)=> ({weight, height, bmi: calculateBMI(weight, height)}));
-    }).flatMap((state)=>state);
 };
 
-const view$ = (state$) => {
-    return state$.map(({weight, height, bmi})=>{
+const view$ = (state$, components) => {
+    return state$.combineLatest(components.WeightSlider, components.HeightSlider, (state, weightSlider, heightSlider)=>{
         return <div>
-                    {WeightSlider(weight)}
-                    {HeightSlider(height)}
-                    <h2>BMI:{bmi}</h2>
+                    {weightSlider}
+                    {heightSlider}
+                    <h2>BMI:{state.bmi}</h2>
                </div>;
     });
 };
 
-const intent = ({DOM})=> {
+const intent = (weightActions, heightActions)=> {
     return {
-        changeWeight$: DOM.select('#weight').events('input').map((ev)=>ev.target.value),
-        changeHeight$: DOM.select('#height').events('input').map((ev)=>ev.target.value)
+        changeWeight$: weightActions,
+        changeHeight$: heightActions
     };
 };
 
 const main = ({DOM, context}) => {
+    const weightProps$ = Observable.just({label: 'Weight', min: 40, max: 140, unit: 'kg', initial: context.weight});
+    const heightProps$ = Observable.just({label: 'Height', min: 140, max: 210, unit: 'cm', initial: context.height});
+    const weightSlider = LabeledSlider({DOM, props$: weightProps$});
+    const heightSlider = LabeledSlider({DOM, props$: heightProps$});
+    const state$ = model$(intent(weightSlider.value$, heightSlider.value$));
     return {
-        DOM: view$(model$(intent({DOM}), context))
+        DOM: view$(state$, {WeightSlider: weightSlider.DOM, HeightSlider: heightSlider.DOM })
     };
 };
 

@@ -5,7 +5,7 @@ import App from './app';
 
 let {sinks, sources} = run(App, {
     DOM: makeDOMDriver('#root'),
-    context: ()=> Observable.just(window.CTX$._value)
+    context: ()=> window.CTX$
 });
 if (module.hot) {
   module.hot.accept();
